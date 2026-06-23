@@ -1,22 +1,28 @@
-on: push
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
 
 name: Lint
 
-jobs:
-  shellcheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: shellcheck
-        uses: ludeeus/action-shellcheck@0.5.0
-        env:
-          SHELLCHECK_OPTS: -e SC1091,SC2164,SC2034,SC1072,SC1073,SC1009
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-  shfmt:
+permissions:
+  contents: read
+
+jobs:
+  super-linter:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: shfmt
-        uses: bltavares/actions/shfmt@master
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Lint Code Base
+        uses: super-linter/super-linter@d5b0a2ab116623730dd094f15ddc1b6b25bf7b99 # v8.3.2
         env:
-          SHFMT_ARGS: -d
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
